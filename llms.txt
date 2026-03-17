@@ -1,0 +1,164 @@
+# Wompi Laravel
+
+> Laravel package for integrating Wompi Colombia Web Checkout payments.
+
+## Package Info
+
+- Name: igedeon/laravel-wompi
+- Namespace: IGedeon\WompiLaravel
+- Laravel: 12+ | PHP: 8.4+
+- Facade: Wompi
+- Config: config/wompi.php
+- Blade prefix: x-wompi::
+
+## Installation
+
+```bash
+composer require igedeon/laravel-wompi
+php artisan vendor:publish --tag=wompi-config
+```
+
+## Required .env Variables
+
+```
+WOMPI_ENVIRONMENT=sandbox|production
+WOMPI_PUBLIC_KEY=pub_test_xxx
+WOMPI_PRIVATE_KEY=prv_test_xxx
+WOMPI_EVENTS_SECRET=test_events_xxx
+WOMPI_INTEGRITY_SECRET=test_integrity_xxx
+```
+
+## Core API
+
+### Payment Links
+```php
+use IGedeon\WompiLaravel\Facades\Wompi;
+use IGedeon\WompiLaravel\DTOs\PaymentLinkData;
+
+// Create
+$link = Wompi::paymentLinks()->create(new PaymentLinkData(
+    name: 'Order #123',
+    description: 'Product purchase',
+    singleUse: true,
+    collectShipping: false,
+    amountInCents: 5000000,
+));
+$url = $link->checkoutUrl();
+
+// Find
+$link = Wompi::paymentLinks()->find($id);
+```
+
+### Transactions
+```php
+use IGedeon\WompiLaravel\Enums\TransactionStatus;
+
+$tx = Wompi::transactions()->find($transactionId);
+// $tx->id, $tx->status, $tx->amountInCents, $tx->reference
+// $tx->status is a TransactionStatus enum: Pending, Approved, Declined, Voided, Error
+// $tx->status->isFinal() returns true for all except Pending
+```
+
+### Merchant Info
+```php
+$merchant = Wompi::merchants()->get();
+// $merchant->name, $merchant->legalName, $merchant->acceptanceToken
+```
+
+### Integrity Hash (manual)
+```php
+$hash = Wompi::integrityHash('reference', 5000000, 'COP');
+$hash = Wompi::integrityHash('reference', 5000000, 'COP', '2026-12-31T23:59:59.000Z');
+```
+
+## Blade Components
+
+### Widget (embeds Wompi checkout on page)
+```blade
+<x-wompi::widget
+    reference="order-123"
+    :amount-in-cents="5000000"
+    currency="COP"
+    redirect-url="https://site.com/thanks"
+    expiration-time="2026-12-31T23:59:59.000Z"
+    customer-email="user@email.com"
+    customer-full-name="Juan Pérez"
+    customer-phone-number="3001234567"
+    :tax-in-cents-vat="2380952"
+    :tax-in-cents-consumption="1200000"
+/>
+```
+
+### Redirect Form (redirects to Wompi checkout page)
+```blade
+<x-wompi::redirect-form
+    reference="order-123"
+    :amount-in-cents="5000000"
+    currency="COP"
+    redirect-url="https://site.com/thanks"
+>
+    <button type="submit">Pay with Wompi</button>
+</x-wompi::redirect-form>
+```
+
+## Webhooks
+
+Auto-registered at POST /wompi/webhook (configurable via WOMPI_WEBHOOK_PATH).
+Signature verification is automatic via middleware.
+
+### Events to listen for
+```php
+use IGedeon\WompiLaravel\Events\TransactionApproved;
+use IGedeon\WompiLaravel\Events\TransactionDeclined;
+use IGedeon\WompiLaravel\Events\TransactionVoided;
+use IGedeon\WompiLaravel\Events\TransactionError;
+use IGedeon\WompiLaravel\Events\WompiWebhookReceived;
+
+// Each transaction event has: $event->transaction (TransactionData DTO)
+// WompiWebhookReceived has: $event->payload (raw array)
+```
+
+### Listener example
+```php
+class HandleApprovedPayment
+{
+    public function handle(TransactionApproved $event): void
+    {
+        $tx = $event->transaction;
+        Order::where('reference', $tx->reference)->update(['status' => 'paid']);
+    }
+}
+```
+
+## DTOs
+
+### PaymentLinkData (for creating links)
+Constructor params: name, description, singleUse, collectShipping, ?amountInCents, currency='COP', ?expiresAt, ?redirectUrl, ?imageUrl, ?sku, ?taxes
+
+### PaymentLinkResponse (returned from API)
+Properties: id, name, description, singleUse, collectShipping, amountInCents, currency, expiresAt, redirectUrl, imageUrl, sku, active
+Methods: checkoutUrl()
+
+### TransactionData (returned from API and webhook events)
+Properties: id, status (TransactionStatus enum), amountInCents, currency, reference, paymentMethodType, paymentLinkId, redirectUrl, statusMessage, raw
+
+### MerchantData
+Properties: id, name, email, legalName, acceptanceToken, acceptancePersonalAuth, raw
+
+## Enums
+
+### TransactionStatus: Pending, Approved, Declined, Voided, Error
+- Values: 'PENDING', 'APPROVED', 'DECLINED', 'VOIDED', 'ERROR'
+- Method: isFinal() — true for all except Pending
+
+### Environment: Sandbox, Production
+### Currency: COP
+
+## Exceptions
+- ApiException (statusCode, responseBody properties)
+- InvalidConfigurationException
+- InvalidSignatureException
+- WompiException (base)
+
+## Amounts
+All amounts are in Colombian Peso cents. $50,000 COP = 5000000 cents.

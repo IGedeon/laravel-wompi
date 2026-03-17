@@ -1,0 +1,47 @@
+{
+    "name": "igedeon/laravel-wompi",
+    "description": "Laravel integration for Wompi Colombia Web Checkout payment gateway",
+    "keywords": ["laravel", "wompi", "payment", "colombia", "checkout", "gateway"],
+    "license": "MIT",
+    "type": "library",
+    "require": {
+        "php": "^8.4",
+        "illuminate/contracts": "^12.0",
+        "illuminate/http": "^12.0",
+        "illuminate/support": "^12.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^10.0",
+        "pestphp/pest": "^3.0",
+        "pestphp/pest-plugin-laravel": "^3.0",
+        "laravel/pint": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "IGedeon\\WompiLaravel\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "IGedeon\\WompiLaravel\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "IGedeon\\WompiLaravel\\WompiServiceProvider"
+            ],
+            "aliases": {
+                "Wompi": "IGedeon\\WompiLaravel\\Facades\\Wompi"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
