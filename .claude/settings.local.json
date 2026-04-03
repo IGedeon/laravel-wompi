@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.wompi.co)",
+      "Bash(composer install:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(composer validate:*)",
+      "Bash(./vendor/bin/pest 2>&1)",
+      "Bash(vendor/bin/pest 2>&1)",
+      "Bash(find src:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "WebFetch(domain:packagist.org)"
+    ]
+  }
+}

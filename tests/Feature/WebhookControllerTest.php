@@ -41,11 +41,11 @@ function validWebhookPayload(string $status = 'APPROVED'): array
     ];
 }
 
-it('returns 200 for valid webhook and dispatches events', function () {
+it('returns 204 for valid webhook and dispatches events', function () {
     Event::fake();
 
     $this->postJson(route('wompi.webhook'), validWebhookPayload())
-        ->assertOk();
+        ->assertNoContent();
 
     Event::assertDispatched(WompiWebhookReceived::class);
     Event::assertDispatched(TransactionApproved::class);
@@ -55,7 +55,7 @@ it('dispatches TransactionDeclined for declined status', function () {
     Event::fake();
 
     $this->postJson(route('wompi.webhook'), validWebhookPayload('DECLINED'))
-        ->assertOk();
+        ->assertNoContent();
 
     Event::assertDispatched(TransactionDeclined::class);
 });
